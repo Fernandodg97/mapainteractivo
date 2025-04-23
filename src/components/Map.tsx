@@ -1,80 +1,87 @@
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
-import { useState, useEffect, useCallback } from "react";
-import { LatLngExpression } from "leaflet";
-import { MapUpdater } from "./MapUpdater";
-import L from "leaflet";
+// Importaciones necesarias para usar el mapa, componentes y funciones
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet"; // Importación de Leaflet para el mapa
+import "leaflet/dist/leaflet.css"; // Importación de los estilos de Leaflet
+import { useState, useEffect, useCallback } from "react"; // Importación de hooks de React
+import { LatLngExpression } from "leaflet"; // Importación de tipos de Leaflet para las coordenadas
+import { MapUpdater } from "./MapUpdater"; // Importación de componente para actualizar el mapa
+import L from "leaflet"; // Importación de la librería de Leaflet para crear marcadores personalizados
 
+// Interfaz que define el formato de los puntos de carga
 interface PuntoDeCarga {
   AddressInfo: {
-    Title?: string;
-    AddressLine1?: string;
-    Town?: string;
-    StateOrProvince?: string;
+    Title?: string; // Título del punto de carga
+    AddressLine1?: string; // Dirección del punto de carga
+    Town?: string; // Ciudad del punto de carga
+    StateOrProvince?: string; // Estado o provincia del punto de carga
     Country?: {
-      Title?: string;
+      Title?: string; // País del punto de carga
     };
-    Latitude: number;
-    Longitude: number;
+    Latitude: number; // Latitud del punto de carga
+    Longitude: number; // Longitud del punto de carga
   };
-  UsageCost?: string;
+  UsageCost?: string; // Costo del uso del punto de carga
   Connections?: {
-    PowerKW?: number;
+    PowerKW?: number; // Potencia del punto de carga en kW
     CurrentType?: {
-      Title?: string;
+      Title?: string; // Tipo de corriente (AC, DC, etc.)
     };
   }[];
-  DateLastStatusUpdate?: string;
+  DateLastStatusUpdate?: string; // Fecha de la última actualización del estado del punto de carga
 }
 
 export function Map() {
-  const [posicion, setPosicion] = useState<LatLngExpression>([41.5421, 2.4445]);
-  const [ciudad, setCiudad] = useState<string>("");
-  const [puntosCarga, setPuntosCarga] = useState<PuntoDeCarga[]>([]);
-  const [maxResults, setMaxResults] = useState<number>(25);
-  const [distanceKm, setDistanceKm] = useState<number>(10);
+  // Estados para manejar la posición del mapa, ciudad, puntos de carga, y opciones de búsqueda
+  const [posicion, setPosicion] = useState<LatLngExpression>([41.5421, 2.4445]); // Posición inicial del mapa
+  const [ciudad, setCiudad] = useState<string>(""); // Ciudad que se va a buscar
+  const [puntosCarga, setPuntosCarga] = useState<PuntoDeCarga[]>([]); // Lista de puntos de carga obtenidos
+  const [maxResults, setMaxResults] = useState<number>(25); // Número máximo de resultados a mostrar
+  const [distanceKm, setDistanceKm] = useState<number>(10); // Distancia en km para la búsqueda
 
+  // Función que busca la ciudad usando la API de Nominatim (OpenStreetMap)
   const buscarCiudad = async () => {
-    if (ciudad.trim() === "") return;
+    if (ciudad.trim() === "") return; // Si el campo de ciudad está vacío, no hacer nada
 
     const response = await fetch(
       `https://nominatim.openstreetmap.org/search?q=${ciudad}&format=json&limit=1`
     );
-    const data = await response.json();
+    const data = await response.json(); // Obtiene la respuesta en formato JSON
 
     if (data && data.length > 0) {
-      const { lat, lon } = data[0];
-      const newPos: LatLngExpression = [parseFloat(lat), parseFloat(lon)];
-      setPosicion(newPos);
+      const { lat, lon } = data[0]; // Obtiene las coordenadas de la ciudad
+      const newPos: LatLngExpression = [parseFloat(lat), parseFloat(lon)]; // Convierte las coordenadas en un tipo LatLngExpression
+      setPosicion(newPos); // Actualiza la posición del mapa
     } else {
-      alert("Ciudad no encontrada");
+      alert("Ciudad no encontrada"); // Si no se encuentra la ciudad, muestra una alerta
     }
 
-    setCiudad("");
+    setCiudad(""); // Limpia el campo de búsqueda
   };
 
+  // Función que obtiene los puntos de carga cercanos a las coordenadas
   const obtenerPuntosDeCarga = useCallback(async (lat: number, lon: number) => {
     const response = await fetch(
       `https://api.openchargemap.io/v3/poi/?output=json&latitude=${lat}&longitude=${lon}&distance=${distanceKm}&distanceunit=KM&maxresults=${maxResults}&compact=true&verbose=false&key=d2dced1b-3959-4701-b1ed-ea19cc826dad`
     );
-    const data = await response.json();
-    setPuntosCarga(data);
-  }, [distanceKm, maxResults]);
+    const data = await response.json(); // Obtiene los puntos de carga en formato JSON
+    setPuntosCarga(data); // Actualiza los puntos de carga en el estado
+  }, [distanceKm, maxResults]); // Dependencias: se vuelve a ejecutar si cambia la distancia o los resultados máximos
 
+  // Hook de efecto que se ejecuta cuando cambia la posición
   useEffect(() => {
     if (posicion) {
-      const [lat, lon] = posicion as [number, number];
-      obtenerPuntosDeCarga(lat, lon);
+      const [lat, lon] = posicion as [number, number]; // Extrae latitud y longitud de la posición
+      obtenerPuntosDeCarga(lat, lon); // Obtiene los puntos de carga cercanos a la nueva posición
     }
-  }, [posicion, obtenerPuntosDeCarga]);
+  }, [posicion, obtenerPuntosDeCarga]); // Dependencias: se ejecuta cada vez que cambia la posición o la función obtenerPuntosDeCarga
 
+  // Define un ícono personalizado para los puntos de carga usando Leaflet
   const customIcon = L.icon({
     iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png",
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
-    shadowSize: [41, 41],
+    iconSize: [25, 41], // Tamaño del icono
+    iconAnchor: [12, 41], // Anclaje del icono
+    popupAnchor: [1, -34], // Anclaje del popup
+    shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png", // Sombra del icono
+    shadowSize: [41, 41], // Tamaño de la sombra
   });
 
   // Función para obtener la ubicación actual del usuario
@@ -82,21 +89,23 @@ export function Map() {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          const lat = position.coords.latitude;
-          const lon = position.coords.longitude;
-          setPosicion([lat, lon]);
+          const lat = position.coords.latitude; // Obtiene la latitud de la ubicación
+          const lon = position.coords.longitude; // Obtiene la longitud de la ubicación
+          setPosicion([lat, lon]); // Actualiza la posición en el mapa
         },
         () => {
-          alert("No se pudo obtener tu ubicación");
+          alert("No se pudo obtener tu ubicación"); // Muestra una alerta si no se puede obtener la ubicación
         }
       );
     } else {
-      alert("La geolocalización no está soportada por tu navegador.");
+      alert("La geolocalización no está soportada por tu navegador."); // Alerta si la geolocalización no es soportada
     }
   };
 
+  // Renderiza el componente del mapa
   return (
     <section className="map-component">
+      {/* Componente de búsqueda */}
       <div className="search">
         <div className="input-group">
           <label htmlFor="ciudad">Ciudad:</label>
@@ -104,11 +113,11 @@ export function Map() {
             id="ciudad"
             type="text"
             value={ciudad}
-            onChange={(e) => setCiudad(e.target.value)}
+            onChange={(e) => setCiudad(e.target.value)} // Actualiza la ciudad al escribir
             onKeyDown={(e) => {
-              if (e.key === "Enter") buscarCiudad();
+              if (e.key === "Enter") buscarCiudad(); // Ejecuta la búsqueda al presionar Enter
             }}
-            placeholder="Introduce una ciudad"
+            placeholder="Introduce una ciudad" // Placeholder para el campo de texto
           />
           <label htmlFor="maxResults">Máx. resultados:</label>
           <input
@@ -116,8 +125,8 @@ export function Map() {
             type="number"
             min={1}
             value={maxResults}
-            onChange={(e) => setMaxResults(Number(e.target.value))}
-            placeholder="Máx. resultados"
+            onChange={(e) => setMaxResults(Number(e.target.value))} // Actualiza el número máximo de resultados
+            placeholder="Máx. resultados" // Placeholder para el número máximo de resultados
           />
           <label htmlFor="distanceKm">Distancia (km):</label>
           <input
@@ -125,25 +134,26 @@ export function Map() {
             type="number"
             min={1}
             value={distanceKm}
-            onChange={(e) => setDistanceKm(Number(e.target.value))}
-            placeholder="Distancia (km)"
+            onChange={(e) => setDistanceKm(Number(e.target.value))} // Actualiza la distancia en km
+            placeholder="Distancia (km)" // Placeholder para la distancia
           />
         </div>
-        <button onClick={buscarCiudad}>Buscar</button>
-        {/* Botón para obtener la ubicación actual */}
-        <button onClick={obtenerUbicacionUsuario}>Mi ubicación</button>
+        <button onClick={buscarCiudad}>Buscar</button> {/* Botón de búsqueda */}
+        <button onClick={obtenerUbicacionUsuario}>Mi ubicación</button> {/* Botón para obtener la ubicación del usuario */}
       </div>
 
+      {/* Componente del mapa */}
       <div className="map">
         <MapContainer center={posicion} zoom={8} scrollWheelZoom={true}>
           <TileLayer
             attribution="&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors"
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" // Capa de mapa de OpenStreetMap
           />
-          <MapUpdater position={posicion} />
+          <MapUpdater position={posicion} /> {/* Componente para actualizar el mapa */}
           <Marker position={posicion}>
-            <Popup>Ciudad seleccionada.</Popup>
+            <Popup>Ciudad seleccionada.</Popup> {/* Popup para la ciudad seleccionada */}
           </Marker>
+          {/* Muestra los puntos de carga en el mapa */}
           {puntosCarga.map((punto, index) => (
             <Marker
               key={index}
@@ -151,21 +161,19 @@ export function Map() {
                 punto.AddressInfo.Latitude,
                 punto.AddressInfo.Longitude,
               ]}
-              icon={customIcon}
+              icon={customIcon} // Usa el ícono personalizado
             >
               <Popup>
                 <div style={{ minWidth: "200px" }}>
-                  <strong>
-                    {punto.AddressInfo?.Title || "Punto de carga"}
-                  </strong>
+                  <strong>{punto.AddressInfo?.Title || "Punto de carga"}</strong> {/* Título del punto de carga */}
                   <br />
-                  {punto.AddressInfo?.AddressLine1}
+                  {punto.AddressInfo?.AddressLine1} {/* Dirección */}
                   <br />
-                  {punto.AddressInfo?.Town}, {punto.AddressInfo?.StateOrProvince}
+                  {punto.AddressInfo?.Town}, {punto.AddressInfo?.StateOrProvince} {/* Ciudad y estado */}
                   <br />
-                  {punto.AddressInfo?.Country?.Title}
+                  {punto.AddressInfo?.Country?.Title} {/* País */}
                   <hr />
-                  <strong>Costo:</strong> {punto.UsageCost || "No especificado"}
+                  <strong>Costo:</strong> {punto.UsageCost || "No especificado"} {/* Costo de uso */}
                   <br />
                   <strong>Conectores:</strong>
                   <ul style={{ paddingLeft: "1.2em", margin: "0.3em 0" }}>
@@ -182,7 +190,7 @@ export function Map() {
                   <br />
                   {punto.DateLastStatusUpdate
                     ? new Date(punto.DateLastStatusUpdate).toLocaleString()
-                    : "Sin fecha"}
+                    : "Sin fecha"} {/* Fecha de la última actualización */}
                 </div>
               </Popup>
             </Marker>
