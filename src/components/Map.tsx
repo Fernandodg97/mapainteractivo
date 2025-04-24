@@ -6,29 +6,6 @@ import { LatLngExpression } from "leaflet"; // Importación de tipos de Leaflet 
 import { MapUpdater } from "./MapUpdater"; // Importación de componente para actualizar el mapa
 import L from "leaflet"; // Importación de la librería de Leaflet para crear marcadores personalizados
 
-// Interfaz que define el formato de los puntos de carga
-interface PuntoDeCarga {
-  AddressInfo: {
-    Title?: string; // Título del punto de carga
-    AddressLine1?: string; // Dirección del punto de carga
-    Town?: string; // Ciudad del punto de carga
-    StateOrProvince?: string; // Estado o provincia del punto de carga
-    Country?: {
-      Title?: string; // País del punto de carga
-    };
-    Latitude: number; // Latitud del punto de carga
-    Longitude: number; // Longitud del punto de carga
-  };
-  UsageCost?: string; // Costo del uso del punto de carga
-  Connections?: {
-    PowerKW?: number; // Potencia del punto de carga en kW
-    CurrentType?: {
-      Title?: string; // Tipo de corriente (AC, DC, etc.)
-    };
-  }[];
-  DateLastStatusUpdate?: string; // Fecha de la última actualización del estado del punto de carga
-}
-
 export function Map() {
   // Estados para manejar la posición del mapa, ciudad, puntos de carga, y opciones de búsqueda
   const [posicion, setPosicion] = useState<LatLngExpression>([41.5421, 2.4445]); // Posición inicial del mapa
