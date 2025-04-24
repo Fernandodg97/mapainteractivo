@@ -111,7 +111,7 @@ Las contribuciones son bienvenidas. Por favor, asegúrate de:
 4. Crear un pull request con una descripción clara de los cambios 
 
 ## Autores
-- [@Fernandodg97](https://github.com/Fernandodg97)
+[@Fernandodg97](https://github.com/Fernandodg97)
 
 ## Licencia
 [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/deed.es)
